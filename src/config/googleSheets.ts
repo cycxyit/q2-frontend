@@ -68,19 +68,19 @@ const ensureTabExists = async (
 
 /**
  * Appends a new order row to the Orders tab ("工作表1").
- * Columns: [OrderID, Date, UserEmail, Phone, Address, Items, TotalAmount, Status, Remarks]
+ * Columns: [OrderID, Date, UserEmail, Phone, Address, Items, TotalAmount, Status, Remarks, Branch]
  */
 export const appendOrderToSheet = async (values: any[]) => {
     const { sheets, spreadsheetId } = await getSheets();
 
-    await sheets.spreadsheets.values.append({
+    const response = await sheets.spreadsheets.values.append({
         spreadsheetId,
         range: `${ORDERS_TAB}!A1`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [values] },
     });
 
-    console.log('[GoogleSheets] ✅ Order row appended to sheet successfully.');
+    console.log(`[GoogleSheets] ✅ Order row appended successfully to range ${response.data.updates?.updatedRange}`);
 };
 
 /**

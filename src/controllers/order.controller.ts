@@ -4,7 +4,7 @@ import db from '../config/db';
 
 export const createOrder = async (req: Request, res: Response) => {
     try {
-        const { items, totalAmount, remarks, phone, address, customerName } = req.body;
+        const { items, totalAmount, remarks, phone, address, customerName, branch } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ message: 'Order must contain at least one item' });
@@ -61,7 +61,8 @@ export const createOrder = async (req: Request, res: Response) => {
             itemsFormatted,
             `$${totalAmount}`,
             'New Order',
-            remarks || ''
+            remarks || '',
+            branch || ''
         ];
 
         try {

@@ -41,21 +41,43 @@ export const createProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Missing required fields: name, description, price, stock' });
         }
 
+        const normalizeUrl = (u: any): string | null => {
+            if (typeof u !== 'string') return null;
+            let s = u.trim();
+            if (!s) return null;
+            const first = s[0];
+            const last = s[s.length - 1];
+            if ((first === '"' && last === '"') || (first === "'" && last === "'") || (first === '`' && last === '`')) {
+                s = s.slice(1, -1).trim();
+            }
+            while (s.endsWith('.')) s = s.slice(0, -1);
+            return s || null;
+        };
+
         // images is a JSON array of URLs; validate and cap at 10
-        let imagesJson: string | null = null;
+        let normalizedImages: string[] = [];
         if (images && Array.isArray(images)) {
-            imagesJson = JSON.stringify(images.slice(0, 10).filter((u: any) => typeof u === 'string' && u.trim()));
+            const seen = new Set<string>();
+            for (const u of images.slice(0, 10)) {
+                const nu = normalizeUrl(u);
+                if (!nu) continue;
+                if (seen.has(nu)) continue;
+                seen.add(nu);
+                normalizedImages.push(nu);
+            }
         }
+        const imagesJson: string | null = normalizedImages.length ? JSON.stringify(normalizedImages) : null;
+        const effectiveImageUrl = normalizeUrl(imageUrl) || normalizedImages[0] || '';
 
         const result = await db.execute({
             sql: `INSERT INTO Product (name, description, price, stock, imageUrl, images)
                   VALUES (?, ?, ?, ?, ?, ?)`,
-            args: [name, description, Number(price), Number(stock), imageUrl || '', imagesJson]
+            args: [name, description, Number(price), Number(stock), effectiveImageUrl, imagesJson]
         });
 
         const product = {
             id: Number(result.lastInsertRowid),
-            name, description, price: Number(price), stock: Number(stock), imageUrl: imageUrl || '', images: imagesJson
+            name, description, price: Number(price), stock: Number(stock), imageUrl: effectiveImageUrl, images: imagesJson
         };
 
         // Log new product to Google Sheets (non-blocking — product creation always succeeds)
@@ -81,18 +103,49 @@ export const updateProduct = async (req: Request, res: Response) => {
         const { id } = req.params;
         const { name, description, price, stock, imageUrl, isActive, images } = req.body;
 
-        let imagesJson: string | undefined = undefined;
+        const normalizeUrl = (u: any): string | null => {
+            if (typeof u !== 'string') return null;
+            let s = u.trim();
+            if (!s) return null;
+            const first = s[0];
+            const last = s[s.length - 1];
+            if ((first === '"' && last === '"') || (first === "'" && last === "'") || (first === '`' && last === '`')) {
+                s = s.slice(1, -1).trim();
+            }
+            while (s.endsWith('.')) s = s.slice(0, -1);
+            return s || null;
+        };
+
+        let imagesJson: string | null | undefined = undefined;
+        let normalizedImages: string[] | undefined = undefined;
         if (images !== undefined) {
-            imagesJson = Array.isArray(images)
-                ? JSON.stringify(images.slice(0, 10).filter((u: any) => typeof u === 'string' && u.trim()))
-                : images; // If images is not an array, assume it's already a string (JSON) or null
+            if (Array.isArray(images)) {
+                const seen = new Set<string>();
+                normalizedImages = [];
+                for (const u of images.slice(0, 10)) {
+                    const nu = normalizeUrl(u);
+                    if (!nu) continue;
+                    if (seen.has(nu)) continue;
+                    seen.add(nu);
+                    normalizedImages.push(nu);
+                }
+                imagesJson = normalizedImages.length ? JSON.stringify(normalizedImages) : null;
+            } else {
+                imagesJson = images;
+            }
         }
+
+        const effectiveImageUrl =
+            normalizeUrl(imageUrl) ||
+            (normalizedImages && normalizedImages[0]) ||
+            imageUrl ||
+            '';
 
         const result = await db.execute({
             sql: `UPDATE Product 
                   SET name = ?, description = ?, price = ?, stock = ?, imageUrl = ?, isActive = ?, images = ?, updatedAt = CURRENT_TIMESTAMP
                   WHERE id = ?`,
-            args: [name, description, Number(price), Number(stock), imageUrl, isActive ? 1 : 0, imagesJson || null, Number(id)]
+            args: [name, description, Number(price), Number(stock), effectiveImageUrl, isActive ? 1 : 0, imagesJson || null, Number(id)]
         });
 
         res.json({ message: 'Product updated successfully' });

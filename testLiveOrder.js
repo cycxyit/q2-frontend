@@ -6,11 +6,12 @@
 
 const runTest = async () => {
     const body = JSON.stringify({
-        items: [{ productId: 1, name: 'Test Watch', quantity: 2, price: 120 }],
+        items: [{ productId: 11, name: '垃圾桶', quantity: 1, price: 11 }],
         totalAmount: 240,
         customerName: 'Test Customer',
         phone: '98765432',
         address: '123 Test Street, HK',
+        branch: 'Harvard Branch',
         remarks: 'Live API test order'
     });
 
