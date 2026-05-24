@@ -40,6 +40,24 @@ export const initDb = async () => {
                 sold INTEGER DEFAULT 0,
                 imageUrl TEXT,
                 images TEXT,
+                branch TEXT,
+                isActive BOOLEAN DEFAULT 1,
+                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        try {
+            await db.execute('ALTER TABLE Product ADD COLUMN branch TEXT DEFAULT "全部"');
+        } catch (e) {
+            // column might already exist
+        }
+
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS Announcement (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT NOT NULL,
+                branch TEXT NOT NULL,
                 isActive BOOLEAN DEFAULT 1,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP

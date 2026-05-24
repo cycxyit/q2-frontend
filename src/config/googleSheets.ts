@@ -70,12 +70,17 @@ const ensureTabExists = async (
  * Appends a new order row to the Orders tab ("工作表1").
  * Columns: [OrderID, Date, UserEmail, Phone, Address, Items, TotalAmount, Status, Remarks, Branch]
  */
-export const appendOrderToSheet = async (values: any[]) => {
+export const appendOrderToSheet = async (values: any[], branchName?: string) => {
     const { sheets, spreadsheetId } = await getSheets();
+
+    const tabName = branchName ? branchName : ORDERS_TAB;
+    
+    // Ensure the specific branch tab exists before appending
+    await ensureTabExists(sheets, spreadsheetId, tabName);
 
     const response = await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: `${ORDERS_TAB}!A1`,
+        range: `${tabName}!A1`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [values] },
     });

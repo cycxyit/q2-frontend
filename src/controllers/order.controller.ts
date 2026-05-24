@@ -66,7 +66,7 @@ export const createOrder = async (req: Request, res: Response) => {
         ];
 
         try {
-            await appendOrderToSheet(rowData);
+            await appendOrderToSheet(rowData, branch || '工作表1');
             console.log(`[Order] ${orderId} written to Google Sheets.`);
         } catch (sheetError: any) {
             console.error('[Order] Google Sheets FAILED:', sheetError?.message || sheetError);

@@ -35,7 +35,7 @@ export const getProductById = async (req: Request, res: Response) => {
 export const createProduct = async (req: Request, res: Response) => {
     try {
         console.log('[createProduct] req.body:', JSON.stringify(req.body, null, 2));
-        const { name, description, price, stock, imageUrl, images } = req.body;
+        const { name, description, price, stock, imageUrl, images, branch } = req.body;
 
         if (!name || !description || price === undefined || stock === undefined) {
             return res.status(400).json({ message: 'Missing required fields: name, description, price, stock' });
@@ -70,14 +70,14 @@ export const createProduct = async (req: Request, res: Response) => {
         const effectiveImageUrl = normalizeUrl(imageUrl) || normalizedImages[0] || '';
 
         const result = await db.execute({
-            sql: `INSERT INTO Product (name, description, price, stock, imageUrl, images)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            args: [name, description, Number(price), Number(stock), effectiveImageUrl, imagesJson]
+            sql: `INSERT INTO Product (name, description, price, stock, imageUrl, images, branch)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            args: [name, description, Number(price), Number(stock), effectiveImageUrl, imagesJson, branch || '["全部"]']
         });
 
         const product = {
             id: Number(result.lastInsertRowid),
-            name, description, price: Number(price), stock: Number(stock), imageUrl: effectiveImageUrl, images: imagesJson
+            name, description, price: Number(price), stock: Number(stock), imageUrl: effectiveImageUrl, images: imagesJson, branch: branch || '["全部"]'
         };
 
         // Log new product to Google Sheets (non-blocking — product creation always succeeds)
@@ -101,7 +101,7 @@ export const createProduct = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { name, description, price, stock, imageUrl, isActive, images } = req.body;
+        const { name, description, price, stock, imageUrl, isActive, images, branch } = req.body;
 
         const normalizeUrl = (u: any): string | null => {
             if (typeof u !== 'string') return null;
@@ -143,9 +143,9 @@ export const updateProduct = async (req: Request, res: Response) => {
 
         const result = await db.execute({
             sql: `UPDATE Product 
-                  SET name = ?, description = ?, price = ?, stock = ?, imageUrl = ?, isActive = ?, images = ?, updatedAt = CURRENT_TIMESTAMP
+                  SET name = ?, description = ?, price = ?, stock = ?, imageUrl = ?, isActive = ?, images = ?, branch = ?, updatedAt = CURRENT_TIMESTAMP
                   WHERE id = ?`,
-            args: [name, description, Number(price), Number(stock), effectiveImageUrl, isActive ? 1 : 0, imagesJson || null, Number(id)]
+            args: [name, description, Number(price), Number(stock), effectiveImageUrl, isActive ? 1 : 0, imagesJson || null, branch || '["全部"]', Number(id)]
         });
 
         res.json({ message: 'Product updated successfully' });
